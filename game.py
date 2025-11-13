@@ -7,7 +7,7 @@ pygame.init()
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Knight Adventure with Hearts")
+pygame.display.set_caption("Knight Adventure with Hearts and Chests")
 
 # Colors
 WHITE = (255, 255, 255)
@@ -16,6 +16,9 @@ RED = (200, 0, 0)
 GREEN = (0, 200, 0)
 
 # Load images
+background_image = pygame.image.load("background.png")
+background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
 player_image = pygame.image.load("knight.png")
 player_size = 50
 player_image = pygame.transform.scale(player_image, (player_size, player_size))
@@ -23,6 +26,10 @@ player_image = pygame.transform.scale(player_image, (player_size, player_size))
 heart_image = pygame.image.load("heart.png")
 heart_size = 40
 heart_image = pygame.transform.scale(heart_image, (heart_size, heart_size))
+
+chest_image = pygame.image.load("chest.png")
+chest_size = 40
+chest_image = pygame.transform.scale(chest_image, (chest_size, chest_size))
 
 enemy_image = pygame.image.load("enemy.png")
 enemy_size = 50
@@ -40,8 +47,14 @@ player_health = 10
 max_health = 10
 
 # Heart setup
-heart_x = random.randint(0, WIDTH - heart_size)
-heart_y = random.randint(0, HEIGHT - heart_size)
+heart_x = -100
+heart_y = -100
+heart_visible = False
+HEART_SPAWN_CHANCE_AFTER_CHEST = 0.3  # 30% chance to spawn heart when chest is collected
+
+# Chest setup
+chest_x = random.randint(0, WIDTH - chest_size)
+chest_y = random.randint(0, HEIGHT - chest_size)
 
 # Enemy setup
 num_enemies = 3
@@ -54,8 +67,9 @@ for _ in range(num_enemies):
 # Fireballs
 fireballs = []
 
-# Score (number of hearts collected)
+# Score
 score = 0
+hearts_collected = 0
 font = pygame.font.SysFont(None, 36)
 
 # Function to draw health bar
@@ -63,8 +77,8 @@ def draw_health_bar(x, y, health, max_health):
     bar_width = 200
     bar_height = 20
     fill = (health / max_health) * bar_width
-    pygame.draw.rect(screen, RED, (x, y, bar_width, bar_height))
-    pygame.draw.rect(screen, GREEN, (x, y, fill, bar_height))
+    pygame.draw.rect(screen, RED, (x, y, bar_width, bar_height))       # Background
+    pygame.draw.rect(screen, GREEN, (x, y, fill, bar_height))          # Current health
     pygame.draw.rect(screen, WHITE, (x, y, bar_width, bar_height), 2)  # Border
 
 # Game loop
@@ -73,7 +87,9 @@ clock = pygame.time.Clock()
 
 while running:
     clock.tick(60)
-    screen.fill(BLACK)
+
+    # Draw background image
+    screen.blit(background_image, (0, 0))
 
     # Event handling
     for event in pygame.event.get():
@@ -92,14 +108,27 @@ while running:
         player_y += player_speed
 
     # Check collision with heart
-    if (player_x < heart_x + heart_size and player_x + player_size > heart_x and
+    if heart_visible and (player_x < heart_x + heart_size and player_x + player_size > heart_x and
         player_y < heart_y + heart_size and player_y + player_size > heart_y):
-        player_health += 2  # Heal 2 points
+        player_health += 2
         if player_health > max_health:
             player_health = max_health
+        hearts_collected += 1
+        # Heart disappears after collection
+        heart_visible = False
+        heart_x, heart_y = -100, -100
+
+    # Check collision with chest
+    if (player_x < chest_x + chest_size and player_x + player_size > chest_x and
+        player_y < chest_y + chest_size and player_y + player_size > chest_y):
         score += 1
-        heart_x = random.randint(0, WIDTH - heart_size)
-        heart_y = random.randint(0, HEIGHT - heart_size)
+        chest_x = random.randint(0, WIDTH - chest_size)
+        chest_y = random.randint(0, HEIGHT - chest_size)
+        # Chest triggers chance to spawn heart if no heart visible
+        if not heart_visible and random.random() < HEART_SPAWN_CHANCE_AFTER_CHEST:
+            heart_x = random.randint(0, WIDTH - heart_size)
+            heart_y = random.randint(0, HEIGHT - heart_size)
+            heart_visible = True
 
     # Move enemies
     for enemy in enemies:
@@ -113,7 +142,7 @@ while running:
             enemy['dir_y'] *= -1
 
         # Randomly shoot fireballs
-        if random.randint(0, 100) < 2:  # 2% chance per frame
+        if random.randint(0, 100) < 2:
             fireballs.append({'x': enemy['x'] + enemy_size//2, 
                               'y': enemy['y'] + enemy_size//2, 
                               'dir_x': (player_x - enemy['x'])/60, 
@@ -126,13 +155,11 @@ while running:
         fireball['x'] += fireball['dir_x']
         fireball['y'] += fireball['dir_y']
 
-        # Remove fireball if off screen
         if (fireball['x'] < 0 or fireball['x'] > WIDTH or
             fireball['y'] < 0 or fireball['y'] > HEIGHT):
             fireballs.remove(fireball)
             continue
 
-        # Check collision with player
         if (player_x < fireball['x'] + fireball_size and player_x + player_size > fireball['x'] and
             player_y < fireball['y'] + fireball_size and player_y + player_size > fireball['y']):
             player_health -= 1
@@ -146,14 +173,16 @@ while running:
     # Draw player
     screen.blit(player_image, (player_x, player_y))
 
-    # Draw heart
-    screen.blit(heart_image, (heart_x, heart_y))
+    # Draw heart and chest
+    if heart_visible:
+        screen.blit(heart_image, (heart_x, heart_y))
+    screen.blit(chest_image, (chest_x, chest_y))
 
     # Draw health bar
     draw_health_bar(10, 10, player_health, max_health)
 
-    # Draw score
-    score_text = font.render(f"Hearts Collected: {score}", True, WHITE)
+    # Draw scores
+    score_text = font.render(f"Chests: {score}  Hearts: {hearts_collected}", True, WHITE)
     screen.blit(score_text, (10, 40))
 
     pygame.display.flip()
