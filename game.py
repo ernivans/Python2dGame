@@ -7,11 +7,13 @@ pygame.init()
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Knight Adventure with Enemies")
+pygame.display.set_caption("Knight Adventure")
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+RED = (200, 0, 0)
+GREEN = (0, 200, 0)
 
 # Load images
 player_image = pygame.image.load("knight.png")
@@ -34,7 +36,8 @@ fireball_image = pygame.transform.scale(fireball_image, (fireball_size, fireball
 player_x = WIDTH // 2
 player_y = HEIGHT // 2
 player_speed = 5
-player_health = 3
+player_health = 10  # Increased health
+max_health = 10
 
 # Chest setup
 chest_x = random.randint(0, WIDTH - chest_size)
@@ -54,6 +57,15 @@ fireballs = []
 # Score
 score = 0
 font = pygame.font.SysFont(None, 36)
+
+# Function to draw health bar
+def draw_health_bar(x, y, health, max_health):
+    bar_width = 200
+    bar_height = 20
+    fill = (health / max_health) * bar_width
+    pygame.draw.rect(screen, RED, (x, y, bar_width, bar_height))
+    pygame.draw.rect(screen, GREEN, (x, y, fill, bar_height))
+    pygame.draw.rect(screen, WHITE, (x, y, bar_width, bar_height), 2)  # Border
 
 # Game loop
 running = True
@@ -134,9 +146,12 @@ while running:
     # Draw chest
     screen.blit(chest_image, (chest_x, chest_y))
 
-    # Draw score and health
-    score_text = font.render(f"Score: {score}  Health: {player_health}", True, WHITE)
-    screen.blit(score_text, (10, 10))
+    # Draw health bar
+    draw_health_bar(10, 10, player_health, max_health)
+
+    # Draw score
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    screen.blit(score_text, (10, 40))
 
     pygame.display.flip()
 
