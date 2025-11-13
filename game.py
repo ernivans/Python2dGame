@@ -7,7 +7,7 @@ pygame.init()
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Knight Adventure")
+pygame.display.set_caption("Knight Adventure with Hearts")
 
 # Colors
 WHITE = (255, 255, 255)
@@ -20,9 +20,9 @@ player_image = pygame.image.load("knight.png")
 player_size = 50
 player_image = pygame.transform.scale(player_image, (player_size, player_size))
 
-chest_image = pygame.image.load("chest.png")
-chest_size = 40
-chest_image = pygame.transform.scale(chest_image, (chest_size, chest_size))
+heart_image = pygame.image.load("heart.png")
+heart_size = 40
+heart_image = pygame.transform.scale(heart_image, (heart_size, heart_size))
 
 enemy_image = pygame.image.load("enemy.png")
 enemy_size = 50
@@ -36,12 +36,12 @@ fireball_image = pygame.transform.scale(fireball_image, (fireball_size, fireball
 player_x = WIDTH // 2
 player_y = HEIGHT // 2
 player_speed = 5
-player_health = 10  # Increased health
+player_health = 10
 max_health = 10
 
-# Chest setup
-chest_x = random.randint(0, WIDTH - chest_size)
-chest_y = random.randint(0, HEIGHT - chest_size)
+# Heart setup
+heart_x = random.randint(0, WIDTH - heart_size)
+heart_y = random.randint(0, HEIGHT - heart_size)
 
 # Enemy setup
 num_enemies = 3
@@ -54,7 +54,7 @@ for _ in range(num_enemies):
 # Fireballs
 fireballs = []
 
-# Score
+# Score (number of hearts collected)
 score = 0
 font = pygame.font.SysFont(None, 36)
 
@@ -91,12 +91,15 @@ while running:
     if keys[pygame.K_DOWN] and player_y < HEIGHT - player_size:
         player_y += player_speed
 
-    # Check collision with chest
-    if (player_x < chest_x + chest_size and player_x + player_size > chest_x and
-        player_y < chest_y + chest_size and player_y + player_size > chest_y):
+    # Check collision with heart
+    if (player_x < heart_x + heart_size and player_x + player_size > heart_x and
+        player_y < heart_y + heart_size and player_y + player_size > heart_y):
+        player_health += 2  # Heal 2 points
+        if player_health > max_health:
+            player_health = max_health
         score += 1
-        chest_x = random.randint(0, WIDTH - chest_size)
-        chest_y = random.randint(0, HEIGHT - chest_size)
+        heart_x = random.randint(0, WIDTH - heart_size)
+        heart_y = random.randint(0, HEIGHT - heart_size)
 
     # Move enemies
     for enemy in enemies:
@@ -143,14 +146,14 @@ while running:
     # Draw player
     screen.blit(player_image, (player_x, player_y))
 
-    # Draw chest
-    screen.blit(chest_image, (chest_x, chest_y))
+    # Draw heart
+    screen.blit(heart_image, (heart_x, heart_y))
 
     # Draw health bar
     draw_health_bar(10, 10, player_health, max_health)
 
     # Draw score
-    score_text = font.render(f"Score: {score}", True, WHITE)
+    score_text = font.render(f"Hearts Collected: {score}", True, WHITE)
     screen.blit(score_text, (10, 40))
 
     pygame.display.flip()
