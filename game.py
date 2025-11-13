@@ -7,26 +7,49 @@ pygame.init()
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("2D Game")
+pygame.display.set_caption("Knight Adventure with Enemies")
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GOLD = (255, 215, 0)
 
-# Load knight image
+# Load images
 player_image = pygame.image.load("knight.png")
-player_size = 50  # We'll scale the image
+player_size = 50
 player_image = pygame.transform.scale(player_image, (player_size, player_size))
 
+chest_image = pygame.image.load("chest.png")
+chest_size = 40
+chest_image = pygame.transform.scale(chest_image, (chest_size, chest_size))
+
+enemy_image = pygame.image.load("enemy.png")
+enemy_size = 50
+enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))
+
+fireball_image = pygame.image.load("fireball.png")
+fireball_size = 20
+fireball_image = pygame.transform.scale(fireball_image, (fireball_size, fireball_size))
+
+# Player setup
 player_x = WIDTH // 2
 player_y = HEIGHT // 2
 player_speed = 5
+player_health = 3
 
-# Coin setup
-coin_size = 30
-coin_x = random.randint(0, WIDTH - coin_size)
-coin_y = random.randint(0, HEIGHT - coin_size)
+# Chest setup
+chest_x = random.randint(0, WIDTH - chest_size)
+chest_y = random.randint(0, HEIGHT - chest_size)
+
+# Enemy setup
+num_enemies = 3
+enemies = []
+for _ in range(num_enemies):
+    x = random.randint(0, WIDTH - enemy_size)
+    y = random.randint(0, HEIGHT - enemy_size)
+    enemies.append({'x': x, 'y': y, 'dir_x': random.choice([-2, 2]), 'dir_y': random.choice([-2, 2])})
+
+# Fireballs
+fireballs = []
 
 # Score
 score = 0
@@ -37,7 +60,7 @@ running = True
 clock = pygame.time.Clock()
 
 while running:
-    clock.tick(60)  # 60 FPS
+    clock.tick(60)
     screen.fill(BLACK)
 
     # Event handling
@@ -45,7 +68,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Key presses
+    # Player movement
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] and player_x > 0:
         player_x -= player_speed
@@ -56,24 +79,65 @@ while running:
     if keys[pygame.K_DOWN] and player_y < HEIGHT - player_size:
         player_y += player_speed
 
-    # Check collision with coin
-    if (player_x < coin_x + coin_size and player_x + player_size > coin_x and
-        player_y < coin_y + coin_size and player_y + player_size > coin_y):
+    # Check collision with chest
+    if (player_x < chest_x + chest_size and player_x + player_size > chest_x and
+        player_y < chest_y + chest_size and player_y + player_size > chest_y):
         score += 1
-        coin_x = random.randint(0, WIDTH - coin_size)
-        coin_y = random.randint(0, HEIGHT - coin_size)
+        chest_x = random.randint(0, WIDTH - chest_size)
+        chest_y = random.randint(0, HEIGHT - chest_size)
+
+    # Move enemies
+    for enemy in enemies:
+        enemy['x'] += enemy['dir_x']
+        enemy['y'] += enemy['dir_y']
+
+        # Bounce off walls
+        if enemy['x'] <= 0 or enemy['x'] >= WIDTH - enemy_size:
+            enemy['dir_x'] *= -1
+        if enemy['y'] <= 0 or enemy['y'] >= HEIGHT - enemy_size:
+            enemy['dir_y'] *= -1
+
+        # Randomly shoot fireballs
+        if random.randint(0, 100) < 2:  # 2% chance per frame
+            fireballs.append({'x': enemy['x'] + enemy_size//2, 
+                              'y': enemy['y'] + enemy_size//2, 
+                              'dir_x': (player_x - enemy['x'])/60, 
+                              'dir_y': (player_y - enemy['y'])/60})
+
+        screen.blit(enemy_image, (enemy['x'], enemy['y']))
+
+    # Move fireballs
+    for fireball in fireballs[:]:
+        fireball['x'] += fireball['dir_x']
+        fireball['y'] += fireball['dir_y']
+
+        # Remove fireball if off screen
+        if (fireball['x'] < 0 or fireball['x'] > WIDTH or
+            fireball['y'] < 0 or fireball['y'] > HEIGHT):
+            fireballs.remove(fireball)
+            continue
+
+        # Check collision with player
+        if (player_x < fireball['x'] + fireball_size and player_x + player_size > fireball['x'] and
+            player_y < fireball['y'] + fireball_size and player_y + player_size > fireball['y']):
+            player_health -= 1
+            fireballs.remove(fireball)
+            if player_health <= 0:
+                running = False
+            continue
+
+        screen.blit(fireball_image, (fireball['x'], fireball['y']))
 
     # Draw player
     screen.blit(player_image, (player_x, player_y))
 
-    # Draw coin
-    pygame.draw.rect(screen, GOLD, (coin_x, coin_y, coin_size, coin_size))
+    # Draw chest
+    screen.blit(chest_image, (chest_x, chest_y))
 
-    # Draw score
-    score_text = font.render(f"Score: {score}", True, WHITE)
+    # Draw score and health
+    score_text = font.render(f"Score: {score}  Health: {player_health}", True, WHITE)
     screen.blit(score_text, (10, 10))
 
-    # Update screen
     pygame.display.flip()
 
 pygame.quit()
