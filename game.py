@@ -12,11 +12,13 @@ pygame.display.set_caption("2D Game")
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (255, 0, 0)
 GOLD = (255, 215, 0)
 
-# Player setup
-player_size = 50
+# Load knight image
+player_image = pygame.image.load("knight.png")
+player_size = 50  # We'll scale the image
+player_image = pygame.transform.scale(player_image, (player_size, player_size))
+
 player_x = WIDTH // 2
 player_y = HEIGHT // 2
 player_speed = 5
@@ -62,7 +64,7 @@ while running:
         coin_y = random.randint(0, HEIGHT - coin_size)
 
     # Draw player
-    pygame.draw.rect(screen, RED, (player_x, player_y, player_size, player_size))
+    screen.blit(player_image, (player_x, player_y))
 
     # Draw coin
     pygame.draw.rect(screen, GOLD, (coin_x, coin_y, coin_size, coin_size))
